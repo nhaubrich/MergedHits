@@ -1,7 +1,7 @@
 # MergedHits
 Identify and split merged hits in the CMS Pixel Tracker
 
-# Analyzer + Notebook setup instruction
+# Analyzer + Notebook setup instruction (open in edit mode for clearer view)
  Setup: (do not run any extra command from the moment you connect to fermilab/lxplus6, not lxplus-slc7)
 	• cd /uscms_data/d3/hichemb/princeton/project1/ (go to your home directory).
 	• source /cvmfs/cms.cern.ch/cmsset_default.csh (or sh for bash).
