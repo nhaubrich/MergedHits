@@ -20,8 +20,8 @@ def DefineModel(size=20):
     inputHitVariables = Input(shape=(2,))
 
     #CNN on cluster images
-    CNN = Conv2D(32, kernel_size=(4,4),padding='same',activation='relu')(inputClusterImages)
-    CNN = Conv2D(4, kernel_size=(4,4),padding='same',activation='relu')(CNN)
+    CNN = Conv2D(32, kernel_size=(8,8),padding='same',activation='relu')(inputClusterImages)
+    CNN = Conv2D(32, kernel_size=(4,4),padding='same',activation='relu')(CNN)
     CNN = Flatten()(CNN)
 
     CNN = Model(inputs=inputClusterImages,outputs=CNN)
@@ -31,7 +31,8 @@ def DefineModel(size=20):
     NN = Model(inputs=inputHitVariables,outputs=NN)
 
     combined_outputs = concatenate([CNN.output,NN.output])
-    combination_NN = Dense(2,activation='softmax')(combined_outputs)
+    combination_NN = Dense(50, activation='relu')(combined_outputs)
+    combination_NN = Dense(2,activation='softmax')(combination_NN)
 
     full_classifier = Model(inputs=[CNN.input,NN.input],outputs=combination_NN)
     full_classifier.compile(loss='categorical_crossentropy', optimizer="adam", metrics = ["accuracy"])
@@ -52,18 +53,17 @@ def GetData(filename,testTrainFrac=.5):
 
     #SELECTIONS
     df = df[(df["GenDeltaR"]<0.1) & (df["nUniqueSimTracksInSharedHit"]>-1)]
-    
-    #need to reindex for some reason...
-    df = df.reindex(index=np.arange(df.shape[0]),columns=df.keys())
+   
+    #reset the indices in case rows have the same index (maybe caused by two-lambda events/vertices?)
+    df = df.set_index(np.arange(df.shape[0]))
     #drop single pixel images
     pixel_columns = [key for key in df.keys() if "pixel_" in key]
     pixelIsFilled = df[pixel_columns]>0
     df = df[pixelIsFilled.sum(axis=1)>1]
-    
-    print(sum(df["nUniqueSimTracksInSharedHit"]>1),sum(df["nUniqueSimTracksInSharedHit"]<=1))
 
     df_train = df.sample(frac=testTrainFrac)
     df_test = df.drop(df_train.index)
+
 
     images_train = to_image(df_train)
     images_test = to_image(df_test)
@@ -88,10 +88,10 @@ def TrainModel(classifier,data,labels,epochs=10,validation_split=0.1):
     classifier.fit(data, labels, epochs=epochs, validation_split=validation_split)
 
 
-def MakeROC(classifier,discriminants,labels):
-    fpr_keras, tpr_keras, thresholds_keras = roc_curve(labels[:,1], discriminants[:,1])
+def PlotROC(classifier,discriminants,labels):
+    fpr_keras, tpr_keras, thresholds_keras = roc_curve(labels[:,1], discriminants)
     auc = np.trapz(tpr_keras,fpr_keras) 
-    print("ROC curve area: {:,.3f}".format(auc))
+    print("ROC curve area: {:.3f}".format(auc))
     
     plt.plot(fpr_keras, tpr_keras, label='Keras (area = {:.3f})'.format(auc))
     plt.xlabel('False positive rate')
@@ -122,16 +122,16 @@ def PlotDiscriminants(train_probs,train_Y,test_probs,test_Y):
 
 def EvaluateModel(classifier,data,labels):
     discriminants = classifier.predict(data)
-    MakeROC(classifier,discriminants,labels)
     return discriminants[:,1]
 
 
 def Run():
-    train_X, test_X, train_Y, test_Y = GetData("/eos/user/h/hboucham/SWAN_projects/MergedHits/output_final20.h5",testTrainFrac=.5)#"RelVal_230720.h5"
+    train_X, test_X, train_Y, test_Y = GetData("/eos/user/h/hboucham/Documents/output_final20.h5")
     model = DefineModel()
     TrainModel(model,train_X,train_Y,epochs=10)
     train_probs = EvaluateModel(model,train_X,train_Y)
     test_probs = EvaluateModel(model,test_X,test_Y)
+    PlotROC(model,test_probs,test_Y)
     PlotDiscriminants(train_probs,train_Y, test_probs,test_Y)
 
 Run()
