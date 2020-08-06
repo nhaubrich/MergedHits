@@ -22,6 +22,7 @@ Identify and split merged hits in the CMS Pixel Tracker
 
 ## Running/Making root files
 Run locally (fastest, good for testing):
+ - compile changes in LambdaAnalyzer.cc using 'scram b -j 4'
  - cmsRun local_trkeffanalyzer_MC_GeneralTracks_cfg.py (runs on files from SingleNeutrino dataset I copied over) 
 
 To run crab jobs:
