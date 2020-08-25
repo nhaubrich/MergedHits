@@ -1,5 +1,4 @@
 import pandas as pd
-#import keras
 import numpy as np
 from sklearn.metrics import roc_auc_score, roc_curve, auc
 from IPython.display import FileLink, FileLinks
@@ -8,8 +7,9 @@ import matplotlib
 matplotlib.use('Agg') # for use without ssh -Y
 import matplotlib.pyplot as plt
 
+### The main inputs you may want to vary are: filenumber, entries_stop, max_epochs.
 
-def GetData(filenumber=0, entries_stop=300, testTrainFrac=.5): # "entries_stop=None" for all entries 
+def GetData(filenumber=5, entries_stop=None, testTrainFrac=.5): # "entries_stop=None" to use all entries 
     from keras.utils import to_categorical
     
     filenames = ["/uscms_data/d3/bbonham/TrackerProject/Output_of_Postprocess/SharedHits/NormalizedCharge/output_final.h5",
@@ -91,8 +91,11 @@ def to_image(df,size=20):
     return  np.expand_dims(np.expand_dims(df[pixels], axis=-1).reshape(-1,size,size), axis=-1)
     
 
-def TrainModel(classifier,data,labels,epochs=10,validation_split=0.1):
-    classifier.fit(data, labels, epochs=epochs, validation_split=validation_split)
+def TrainModel(classifier,data,labels,max_epochs=100,validation_split=0.1):
+    from keras.callbacks import EarlyStopping, ModelCheckpoint
+    early_stopping = EarlyStopping(monitor='val_loss', patience=10) # early epoch stopping
+    
+    classifier.fit(data, labels, epochs=max_epochs, validation_split=validation_split, callbacks=[early_stopping])
     classifier.save('TrainedClassifier_'+filename[60:-16].replace('/','_')+'.h5')
     
     
